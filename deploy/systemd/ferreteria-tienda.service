@@ -1,0 +1,15 @@
+# Servicio systemd de la tienda (Guía 18). Se copia a /etc/systemd/system/ferreteria-tienda.service
+# Mismos límites de memoria que Auth (ver comentarios en ferreteria-auth.service).
+[Unit]
+Description=Ferreteria Los Maestros - API de la tienda (127.0.0.1:8080)
+After=network.target mariadb.service
+
+[Service]
+User=ubuntu
+EnvironmentFile=/etc/ferreteria/tienda.env
+ExecStart=/usr/bin/java -Xms128m -Xmx256m -XX:+ExitOnOutOfMemoryError -jar /opt/ferreteria-tienda/app.jar
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

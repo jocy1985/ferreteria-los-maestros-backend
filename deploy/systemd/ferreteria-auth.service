@@ -1,0 +1,18 @@
+# Servicio systemd de Auth (Guía 18). Se copia a /etc/systemd/system/ferreteria-auth.service
+# -Xms128m -Xmx256m: límite de memoria de la JVM para que dos backend + MariaDB + Nginx quepan
+#   en una t3.micro (1 GB de RAM + 2 GB de swap).
+# -XX:+ExitOnOutOfMemoryError: si se queda sin memoria, el proceso termina en vez de quedar
+#   colgado, y Restart=on-failure lo vuelve a levantar a los 5 segundos.
+[Unit]
+Description=Ferreteria Los Maestros - Auth API (127.0.0.1:8081)
+After=network.target mariadb.service
+
+[Service]
+User=ubuntu
+EnvironmentFile=/etc/ferreteria/auth.env
+ExecStart=/usr/bin/java -Xms128m -Xmx256m -XX:+ExitOnOutOfMemoryError -jar /opt/ferreteria-auth/app.jar
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
