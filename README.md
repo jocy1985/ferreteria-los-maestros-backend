@@ -3,7 +3,7 @@
 API REST de la tienda online, hecha con Spring Boot y MySQL (DSY1104, Evaluación Parcial 3).
 Las rutas están versionadas bajo `/api/v1`.
 
-Desde la Guía 17 la solución tiene **dos backend**:
+La solución tiene **dos backend**:
 
 | | Auth (`ferreteria-los-maestros-auth`) | Este backend |
 |---|---|---|
@@ -54,45 +54,10 @@ El orden importa: las tablas las crea Spring, y el script solo inserta datos en 
 
 No hace falta reiniciar el backend después de importar.
 
-### Si la base viene de antes de la Guía 17
-
-Antes, `boleta.usuario_id` era una llave foránea hacia la tabla `usuario` de esta misma base.
-`ddl-auto=update` no borra esa llave, y con ella un cliente nuevo (id 4 o más, creado en Auth) no
-podría comprar. Hay dos formas de resolverlo:
-
-- **Conservar las boletas:** en phpMyAdmin, pestaña SQL de `ferreteria_los_maestros`, buscar el
-  nombre de la llave y borrarla:
-
-  ```sql
-  SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
-  WHERE TABLE_SCHEMA = 'ferreteria_los_maestros' AND TABLE_NAME = 'boleta'
-    AND REFERENCED_TABLE_NAME = 'usuario';
-
-  ALTER TABLE boleta DROP FOREIGN KEY nombre_que_entrego_la_consulta;
-  ```
-
-  Después borrar la tabla `usuario` antigua: ya no se usa y guarda las claves en texto plano
-  (`DROP TABLE usuario;`).
-- **Partir de cero:** borrar la base `ferreteria_los_maestros`, arrancar el backend y volver a
-  importar `sql/datos_iniciales.sql`.
-
-### Si la base viene de antes de la Guía 18 (UNIQUE)
-
-Desde la Guía 18 el código de producto y el nombre de categoría son `UNIQUE` también en la base.
-En una base nueva Spring crea la restricción, pero `ddl-auto=update` **no** la agrega a una tabla
-que ya existe (comprobado). En phpMyAdmin, pestaña SQL de `ferreteria_los_maestros`:
-
-```sql
-ALTER TABLE producto ADD CONSTRAINT uk_producto_codigo UNIQUE (codigo);
-ALTER TABLE categoria ADD CONSTRAINT uk_categoria_nombre UNIQUE (nombre);
-```
-
-Si responde "Duplicate entry", primero hay que corregir el código o nombre repetido.
-
 ### Sobre el script de datos iniciales
 
-- Trae las categorías y productos del frontend (`src/data/productos.js`). Los usuarios ya no están
-  aquí: los crea Auth al arrancar.
+- Trae las categorías y productos de la tienda. Los usuarios no están aquí: los crea Auth al
+  arrancar.
 - Usa `INSERT IGNORE` con ids fijos, así que se puede ejecutar más de una vez: los registros que
   ya existen no se modifican y el stock actual se conserva.
 
@@ -127,7 +92,7 @@ responde 401 a todos los tokens.
   las rutas públicas: si la solicitud trae un Bearer, este debe ser válido. Así una compra con la
   sesión vencida no queda registrada como invitado.
 - **403 rol insuficiente:** `{ "error": "No tienes permisos para esta operación" }`.
-- **Quién compra:** el `POST` de boleta ya no recibe `usuarioId`. Si trae token, la boleta queda con
+- **Quién compra:** el `POST` de boleta no recibe `usuarioId`. Si trae token, la boleta queda con
   el `id` del token; si no, `usuarioId` queda `null` (compra como invitado).
 - **Respuesta del POST de boleta:** trae la boleta con sus líneas en `detalles` (código, nombre,
   cantidad, precio y subtotal de cada producto). Así el cliente o invitado ve su confirmación sin
@@ -154,9 +119,9 @@ Necesitan **MySQL de XAMPP encendido**, porque levantan la aplicación completa.
 
 - `SeguridadTests` (7): restricciones por rol (401/403, `/mias`) con tokens firmados en la propia
   prueba; ninguna solicitud llega a modificar la base.
-- `ProductoServiceTests` (6) y `BoletaServiceTests` (6), Guía 18: reglas de negocio contra una base
-  aparte, `ferreteria_test` (URL con `createDatabaseIfNotExist=true` y `ddl-auto=create-drop`), así
-  que nunca tocan `ferreteria_los_maestros`. Cubren código repetido (409, también en minúsculas),
+- `ProductoServiceTests` (6) y `BoletaServiceTests` (6): reglas de negocio contra una base aparte,
+  `ferreteria_test` (URL con `createDatabaseIfNotExist=true` y `ddl-auto=create-drop`), así que
+  nunca tocan `ferreteria_los_maestros`. Cubren código repetido (409, también en minúsculas),
   UNIQUE de la base, producto en boletas no se elimina, descuento de stock, total con precio de
   oferta, stock insuficiente sin guardar nada (`@Transactional`), despacho sin dirección (400),
   anulación que devuelve stock y boleta anulada que no se vuelve a anular ni modificar.
@@ -198,8 +163,8 @@ Ejemplo de `POST /api/v1/boletas` (con o sin token):
 ## Reglas de negocio
 
 - El código de producto y el nombre de categoría no se pueden repetir: lo revisa el servicio (409)
-  y, desde la Guía 18, también la base con `UNIQUE` (si dos solicitudes llegan a la vez, la base
-  rechaza la segunda y también responde 409).
+  y también la base con `UNIQUE` (si dos solicitudes llegan a la vez, la base rechaza la segunda y
+  también responde 409).
 - El POST de boleta valida el stock, lo descuenta, crea los detalles y calcula el total usando
   `precioOferta` cuando existe. Si una línea falla, no se guarda nada.
 - El PUT de boleta solo cambia datos de contacto, entrega y estado (`RECIBIDA`, `CONFIRMADA` o
@@ -221,7 +186,7 @@ Ejemplo de `POST /api/v1/boletas` (con o sin token):
 
 Los errores siempre responden `{ "error": "mensaje" }`.
 
-## Producción (Guía 18)
+## Producción
 
 El despliegue en AWS EC2 (Nginx + dos servicios systemd + MariaDB) está en
 [`deploy/DESPLIEGUE.md`](deploy/DESPLIEGUE.md), con los comandos exactos para los tres proyectos.
@@ -243,7 +208,7 @@ para los secretos (si falta una, la tienda no arranca):
 | `/swagger/auth/`, `/swagger/tienda/` | Swagger de cada backend (público para la presentación) |
 | Lo demás | React (`/var/www/ferreteria`) |
 
-Swagger se publica por Nginx (la Guía 18 usa túneles SSH) porque la presentación se hace desde un
+Swagger se publica por Nginx, en vez de usar túneles SSH, porque la presentación se hace desde un
 computador de la sala sin la llave `.pem`. `server.forward-headers-strategy=framework` hace que
 Swagger use el prefijo `/swagger/tienda` en "Try it out"; los endpoints siguen exigiendo JWT y rol.
 El túnel queda documentado como alternativa.

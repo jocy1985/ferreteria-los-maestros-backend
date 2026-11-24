@@ -1,7 +1,7 @@
-# Despliegue en AWS EC2 — Ferretería Los Maestros (Guía 18)
+# Despliegue en AWS EC2 — Ferretería Los Maestros
 
 Guía paso a paso para publicar los tres proyectos en **una** instancia EC2 Ubuntu 24.04 (t3.micro).
-Sigue la Guía 18, adaptada a este proyecto. Todos los comandos son de este proyecto: solo hay que
+Todos los comandos son de este proyecto: solo hay que
 reemplazar los valores en MAYÚSCULAS (`IP_PUBLICA`, `RUTA\CLAVE.pem`, `CAMBIAR_...`).
 
 > Los secretos (claves de base, `JWT_SECRET`, claves demo) **nunca** van a Git ni a capturas
@@ -77,7 +77,7 @@ Desde ahora `IP_PUBLICA` es esa IP elástica.
 
 ## 2. Llave `.pem` y primera conexión (PowerShell local)
 
-En la carpeta de la llave (igual que la Guía 18):
+En la carpeta de la llave:
 
 ```powershell
 icacls .\CLAVE.pem /inheritance:r
@@ -338,7 +338,7 @@ sudo ss -lntp | grep -E ':8080|:8081'
 | Login con clave incorrecta | 401 `{"error":"Credenciales inválidas"}` (Auth ya lee su base) |
 | `ss` | Java en `127.0.0.1:8080` y `127.0.0.1:8081`, **no** en `0.0.0.0` |
 
-> La Guía 18 hace `GET` al login y espera 405. Aquí da 401: en `SecurityConfig` de Auth todo lo
+> Un `GET` al login responde 401 (no 405): en `SecurityConfig` de Auth todo lo
 > que no está permitido cae en `denyAll`, que sin token responde 401 antes de llegar a Spring MVC.
 
 ---
@@ -419,8 +419,8 @@ En el navegador, `http://IP_PUBLICA`:
 
 ## 12. Swagger público (presentación) y túnel SSH (alternativa)
 
-**Público por Nginx** (diferencia con la Guía 18, que solo usa túneles: en la presentación se usa
-un computador de la sala sin la llave `.pem`):
+**Público por Nginx** (en la presentación se usa un computador de la sala sin la llave `.pem`, así
+que no se puede abrir un túnel SSH):
 
 - Auth: `http://IP_PUBLICA/swagger/auth/`
 - Tienda: `http://IP_PUBLICA/swagger/tienda/`
@@ -435,7 +435,7 @@ servidor `http://IP_PUBLICA/swagger/tienda` (se ve en la lista **Servers**), y c
 prueba vuelve a pasar por Nginx hasta `127.0.0.1:8080`. Swagger solo muestra la documentación:
 los endpoints siguen exigiendo JWT y rol.
 
-**Alternativa de la guía: túnel SSH** (con la llave, sin depender de Nginx). PowerShell local,
+**Alternativa: túnel SSH** (con la llave, sin depender de Nginx). PowerShell local,
 dejar la ventana abierta:
 
 ```powershell
